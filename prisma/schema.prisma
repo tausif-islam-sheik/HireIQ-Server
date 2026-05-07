@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CANDIDATE
+  RECRUITER
+  ADMIN
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  REMOTE
+  INTERNSHIP
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String?
+  avatar        String?
+  role          Role           @default(CANDIDATE)
+  googleId      String?        @unique
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  company       Company?
+  applications  Application[]
+  resume        Resume?
+  notifications Notification[]
+  interviews    Interview[]
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  logo        String?
+  website     String?
+  description String?
+  location    String?
+  industry    String?
+  size        String?
+  recruiterId String   @unique
+  recruiter   User     @relation(fields: [recruiterId], references: [id])
+  jobs        Job[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  requirements String[]
+  skills       String[]
+  salary       String?
+  location     String
+  type         JobType       @default(FULL_TIME)
+  category     String
+  experience   String
+  isActive     Boolean       @default(true)
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id])
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  status      ApplicationStatus @default(PENDING)
+  coverLetter String?
+  aiScore     Float?
+  aiFeedback  String?
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id])
+  candidateId String
+  candidate   User              @relation(fields: [candidateId], references: [id])
+  interview   Interview?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([jobId, candidateId])
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  fileUrl    String
+  parsedData Json?
+  aiAnalysis Json?
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Interview {
+  id            String      @id @default(cuid())
+  messages      Json[]
+  aiFeedback    String?
+  overallScore  Float?
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
