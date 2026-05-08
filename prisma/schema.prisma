@@ -46,6 +46,7 @@ model User {
   resume        Resume?
   notifications Notification[]
   interviews    Interview[]
+  savedJobs     SavedJob[]
 }
 
 model Company {
@@ -79,6 +80,7 @@ model Job {
   companyId    String
   company      Company       @relation(fields: [companyId], references: [id])
   applications Application[]
+  savedJobs    SavedJob[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -133,4 +135,16 @@ model Notification {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model SavedJob {
+  id          String   @id @default(cuid())
+  jobName     String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, jobId])
 }

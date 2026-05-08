@@ -297,6 +297,7 @@ export const applicationService = {
       const [
         myApplications,
         interviewCount,
+        savedJobsCount,
         applicationsByDateRaw,
         recentApplications,
         statusStats,
@@ -308,6 +309,10 @@ export const applicationService = {
         // Interview count (applications with INTERVIEW status)
         prisma.application.count({
           where: { candidateId: userId, status: "INTERVIEW" },
+        }),
+        // Saved jobs count
+        prisma.savedJob.count({
+          where: { userId },
         }),
         // Applications grouped by date (last 30 days)
         prisma.application.groupBy({
@@ -366,7 +371,7 @@ export const applicationService = {
       return {
         myApplications,
         interviewCount,
-        savedJobs: 0, // No saved jobs model exists yet
+        savedJobs: savedJobsCount,
         applicationsByDate,
         recentApplications: formattedRecentApplications,
         statusBreakdown: statusStats.map((s) => ({ status: s.status, count: s._count.status })),
