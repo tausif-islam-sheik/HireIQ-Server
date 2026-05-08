@@ -38,6 +38,7 @@ export const jobService = {
       category,
       type,
       location,
+      salary,
       experience,
       sortBy = "createdAt",
       sortOrder = "desc",
@@ -79,10 +80,18 @@ export const jobService = {
       where.experience = { contains: experience, mode: "insensitive" };
     }
 
+    if (salary) {
+      where.salary = { contains: salary, mode: "insensitive" };
+    }
+
     const orderBy: Prisma.JobOrderByWithRelationInput = {};
     const validSortFields = ["createdAt", "title", "salary", "location"];
     if (validSortFields.includes(sortBy)) {
       (orderBy as Record<string, string>)[sortBy] = sortOrder;
+    } else if (sortBy === "salary_high") {
+      orderBy.salary = "desc";
+    } else if (sortBy === "salary_low") {
+      orderBy.salary = "asc";
     } else {
       orderBy.createdAt = "desc";
     }
