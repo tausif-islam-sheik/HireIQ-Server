@@ -7,6 +7,7 @@ const router = Router();
 
 router.post("/", authenticate, requireCandidate, applicationController.apply);
 router.get("/my", authenticate, requireCandidate, applicationController.getMyApplications);
+router.get("/recruiter", authenticate, requireRecruiter, applicationController.getRecruiterApplications);
 router.get("/job/:jobId", authenticate, requireRecruiter, applicationController.getJobApplicants);
 router.get("/stats", authenticate, applicationController.getStats);
 router.put("/:id/status", authenticate, requireRecruiter, applicationController.updateStatus);

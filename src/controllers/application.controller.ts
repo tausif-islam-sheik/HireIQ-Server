@@ -80,7 +80,7 @@ export const applicationController = {
       const { jobId } = req.params;
       const { page = "1", limit = "10", status, sortBy, sortOrder } = req.query as Record<string, string>;
 
-      const result = await applicationService.getJobApplicants(jobId, req.user.userId, {
+      const result = await applicationService.getJobApplicants(jobId as string, req.user.userId, {
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
         status,
@@ -120,7 +120,7 @@ export const applicationController = {
         return;
       }
 
-      const updated = await applicationService.updateStatus(id, req.user.userId, status);
+      const updated = await applicationService.updateStatus(id as string, req.user.userId, status);
 
       res.json({
         success: true,
@@ -146,7 +146,7 @@ export const applicationController = {
       }
 
       const { id } = req.params;
-      await applicationService.withdraw(id, req.user.userId);
+      await applicationService.withdraw(id as string, req.user.userId);
 
       res.json({ success: true, message: "Application withdrawn", data: null });
     } catch (error) {
@@ -176,6 +176,28 @@ export const applicationController = {
       res.status(err.statusCode || 500).json({
         success: false,
         message: err.message || "Failed to retrieve stats",
+        data: null,
+      });
+    }
+  },
+
+  async getRecruiterApplications(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const { jobId } = req.query as { jobId?: string };
+      const result = await applicationService.getRecruiterApplications(req.user.userId, jobId);
+
+      res.json({ success: true, message: "Applications retrieved", data: result });
+    } catch (error) {
+      const err = error as Error & { statusCode?: number };
+      logger.error("Get recruiter applications error:", err.message);
+      res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Failed to retrieve applications",
         data: null,
       });
     }

@@ -247,38 +247,287 @@ export const applicationService = {
     logger.info(`Application withdrawn: ${id}`);
   },
 
-  async getStats(userId: string, role: string) {
-    if (role === "CANDIDATE") {
-      const stats = await prisma.application.groupBy({
-        by: ["status"],
-        where: { candidateId: userId },
-        _count: { status: true },
-      });
+  async getRecruiterApplications(recruiterId: string, jobId?: string) {
+    // Get the recruiter's company
+    const company = await prisma.company.findUnique({
+      where: { recruiterId },
+    });
 
-      return stats.map((s) => ({ status: s.status, count: s._count.status }));
+    if (!company) {
+      return { applications: [] };
     }
 
+    const where: Prisma.ApplicationWhereInput = {
+      job: { companyId: company.id },
+    };
+
+    if (jobId) {
+      where.jobId = jobId;
+    }
+
+    const applications = await prisma.application.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        candidate: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+            resume: { select: { id: true, fileUrl: true, aiAnalysis: true } },
+          },
+        },
+        job: {
+          select: {
+            id: true,
+            title: true,
+            company: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    return { applications };
+  },
+
+  async getStats(userId: string, role: string) {
+    // Candidate dashboard stats
+    if (role === "CANDIDATE") {
+      const [
+        myApplications,
+        interviewCount,
+        applicationsByDateRaw,
+        recentApplications,
+        statusStats,
+      ] = await Promise.all([
+        // Total applications count
+        prisma.application.count({
+          where: { candidateId: userId },
+        }),
+        // Interview count (applications with INTERVIEW status)
+        prisma.application.count({
+          where: { candidateId: userId, status: "INTERVIEW" },
+        }),
+        // Applications grouped by date (last 30 days)
+        prisma.application.groupBy({
+          by: ["createdAt"],
+          where: { candidateId: userId },
+          _count: { id: true },
+          orderBy: { createdAt: "asc" },
+          take: 30,
+        }),
+        // Recent applications (last 10)
+        prisma.application.findMany({
+          where: { candidateId: userId },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: {
+            job: {
+              select: {
+                title: true,
+                company: { select: { name: true } },
+              },
+            },
+          },
+        }),
+        // Status breakdown
+        prisma.application.groupBy({
+          by: ["status"],
+          where: { candidateId: userId },
+          _count: { status: true },
+        }),
+      ]);
+
+      // Format applicationsByDate to group by month
+      const monthMap = new Map<string, number>();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      
+      applicationsByDateRaw.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const monthKey = months[date.getMonth()];
+        monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + item._count.id);
+      });
+
+      const applicationsByDate = months.map((month) => ({
+        date: month,
+        count: monthMap.get(month) || 0,
+      }));
+
+      // Format recentApplications to match expected structure
+      const formattedRecentApplications = recentApplications.map((app) => ({
+        id: app.id,
+        status: app.status,
+        createdAt: app.createdAt.toISOString(),
+        candidate: { name: "You", email: "" },
+        job: app.job,
+      }));
+
+      return {
+        myApplications,
+        interviewCount,
+        savedJobs: 0, // No saved jobs model exists yet
+        applicationsByDate,
+        recentApplications: formattedRecentApplications,
+        statusBreakdown: statusStats.map((s) => ({ status: s.status, count: s._count.status })),
+      };
+    }
+
+    // Recruiter dashboard stats
     if (role === "RECRUITER") {
       const company = await prisma.company.findUnique({
         where: { recruiterId: userId },
       });
 
-      if (!company) return [];
+      if (!company) {
+        return {
+          myJobs: 0,
+          myApplications: 0,
+          pendingReviews: 0,
+          interviewCount: 0,
+          applicationsByDate: [],
+          recentApplications: [],
+          statusBreakdown: [],
+        };
+      }
 
-      const stats = await prisma.application.groupBy({
-        by: ["status"],
-        where: { job: { companyId: company.id } },
-        _count: { status: true },
+      const [
+        myJobs,
+        myApplications,
+        pendingReviews,
+        interviewCount,
+        applicationsByDateRaw,
+        recentApplications,
+        statusStats,
+      ] = await Promise.all([
+        prisma.job.count({ where: { companyId: company.id, isActive: true } }),
+        prisma.application.count({
+          where: { job: { companyId: company.id } },
+        }),
+        prisma.application.count({
+          where: { job: { companyId: company.id }, status: "PENDING" },
+        }),
+        prisma.application.count({
+          where: { job: { companyId: company.id }, status: "INTERVIEW" },
+        }),
+        prisma.application.groupBy({
+          by: ["createdAt"],
+          where: { job: { companyId: company.id } },
+          _count: { id: true },
+          orderBy: { createdAt: "asc" },
+          take: 30,
+        }),
+        prisma.application.findMany({
+          where: { job: { companyId: company.id } },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: {
+            candidate: { select: { name: true, email: true, avatar: true } },
+            job: { select: { title: true, company: { select: { name: true } } } },
+          },
+        }),
+        prisma.application.groupBy({
+          by: ["status"],
+          where: { job: { companyId: company.id } },
+          _count: { status: true },
+        }),
+      ]);
+
+      // Format applicationsByDate
+      const monthMap = new Map<string, number>();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      
+      applicationsByDateRaw.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const monthKey = months[date.getMonth()];
+        monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + item._count.id);
       });
 
-      return stats.map((s) => ({ status: s.status, count: s._count.status }));
+      const applicationsByDate = months.map((month) => ({
+        date: month,
+        count: monthMap.get(month) || 0,
+      }));
+
+      // Format recentApplications
+      const formattedRecentApplications = recentApplications.map((app) => ({
+        id: app.id,
+        status: app.status,
+        createdAt: app.createdAt.toISOString(),
+        candidate: app.candidate,
+        job: app.job,
+      }));
+
+      return {
+        myJobs,
+        myApplications,
+        pendingReviews,
+        interviewCount,
+        applicationsByDate,
+        recentApplications: formattedRecentApplications,
+        statusBreakdown: statusStats.map((s) => ({ status: s.status, count: s._count.status })),
+      };
     }
 
-    const stats = await prisma.application.groupBy({
-      by: ["status"],
-      _count: { status: true },
+    // Admin dashboard stats - return global stats
+    const [
+      totalUsers,
+      totalJobs,
+      totalApplications,
+      totalCompanies,
+      applicationsByDateRaw,
+      recentApplications,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.job.count({ where: { isActive: true } }),
+      prisma.application.count(),
+      prisma.company.count(),
+      prisma.application.groupBy({
+        by: ["createdAt"],
+        _count: { id: true },
+        orderBy: { createdAt: "asc" },
+        take: 30,
+      }),
+      prisma.application.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          candidate: { select: { name: true, email: true, avatar: true } },
+          job: { select: { title: true, company: { select: { name: true } } } },
+        },
+      }),
+    ]);
+
+    // Format applicationsByDate
+    const monthMap = new Map<string, number>();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    applicationsByDateRaw.forEach((item) => {
+      const date = new Date(item.createdAt);
+      const monthKey = months[date.getMonth()];
+      monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + item._count.id);
     });
 
-    return stats.map((s) => ({ status: s.status, count: s._count.status }));
+    const applicationsByDate = months.map((month) => ({
+      date: month,
+      count: monthMap.get(month) || 0,
+    }));
+
+    // Format recentApplications
+    const formattedRecentApplications = recentApplications.map((app) => ({
+      id: app.id,
+      status: app.status,
+      createdAt: app.createdAt.toISOString(),
+      candidate: app.candidate,
+      job: app.job,
+    }));
+
+    return {
+      totalUsers,
+      totalJobs,
+      totalApplications,
+      totalCompanies,
+      applicationsByDate,
+      recentApplications: formattedRecentApplications,
+    };
   },
 };
