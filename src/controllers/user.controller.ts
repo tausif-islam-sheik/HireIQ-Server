@@ -95,6 +95,59 @@ export const userController = {
     }
   },
 
+  async getProfile(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatar: true,
+          isVerified: true,
+          phone: true,
+          location: true,
+          dateOfBirth: true,
+          bio: true,
+          jobTitle: true,
+          experienceLevel: true,
+          availability: true,
+          expectedSalary: true,
+          skills: true,
+          linkedin: true,
+          github: true,
+          portfolio: true,
+          createdAt: true,
+          updatedAt: true,
+          company: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        res.status(404).json({ success: false, message: "User not found", data: null });
+        return;
+      }
+
+      res.json({ success: true, message: "Profile retrieved", data: user });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Get profile error:", err.message);
+      res.status(500).json({ success: false, message: "Failed to get profile", data: null });
+    }
+  },
+
   async updateProfile(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
@@ -102,13 +155,40 @@ export const userController = {
         return;
       }
 
-      const { name, avatar } = req.body;
+      const {
+        name,
+        avatar,
+        phone,
+        location,
+        dateOfBirth,
+        bio,
+        jobTitle,
+        experienceLevel,
+        availability,
+        expectedSalary,
+        skills,
+        linkedin,
+        github,
+        portfolio,
+      } = req.body;
 
       const updated = await prisma.user.update({
         where: { id: req.user.userId },
         data: {
-          ...(name && { name }),
-          ...(avatar && { avatar }),
+          ...(name !== undefined && { name }),
+          ...(avatar !== undefined && { avatar }),
+          ...(phone !== undefined && { phone }),
+          ...(location !== undefined && { location }),
+          ...(dateOfBirth !== undefined && { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null }),
+          ...(bio !== undefined && { bio }),
+          ...(jobTitle !== undefined && { jobTitle }),
+          ...(experienceLevel !== undefined && { experienceLevel }),
+          ...(availability !== undefined && { availability }),
+          ...(expectedSalary !== undefined && { expectedSalary }),
+          ...(skills !== undefined && { skills }),
+          ...(linkedin !== undefined && { linkedin }),
+          ...(github !== undefined && { github }),
+          ...(portfolio !== undefined && { portfolio }),
         },
         select: {
           id: true,
@@ -117,6 +197,20 @@ export const userController = {
           role: true,
           avatar: true,
           isVerified: true,
+          phone: true,
+          location: true,
+          dateOfBirth: true,
+          bio: true,
+          jobTitle: true,
+          experienceLevel: true,
+          availability: true,
+          expectedSalary: true,
+          skills: true,
+          linkedin: true,
+          github: true,
+          portfolio: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 

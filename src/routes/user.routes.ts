@@ -6,6 +6,7 @@ import { requireAdmin } from "../middleware/role.middleware";
 const router = Router();
 
 router.get("/", authenticate, requireAdmin, userController.list);
+router.get("/profile", authenticate, userController.getProfile);
 router.get("/notifications", authenticate, userController.getNotifications);
 router.put("/notifications/read", authenticate, userController.markNotificationsRead);
 router.get("/dashboard-stats", authenticate, userController.getDashboardStats);
