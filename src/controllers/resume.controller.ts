@@ -2,6 +2,8 @@ import { Response } from "express";
 import prisma from "../lib/prisma";
 import { AuthRequest } from "../types";
 import { logger } from "../lib/logger";
+import { uploadToCloudinary } from "../lib/cloudinary";
+import fs from "fs";
 
 export const resumeController = {
   async upload(req: AuthRequest, res: Response): Promise<void> {
@@ -11,11 +13,35 @@ export const resumeController = {
         return;
       }
 
-      const { fileUrl, parsedData } = req.body;
+      let fileUrl: string;
+      let parsedData: any = null;
 
-      if (!fileUrl) {
-        res.status(400).json({ success: false, message: "File URL is required", data: null });
-        return;
+      // Handle file upload (from multer)
+      if (req.file) {
+        // Upload to Cloudinary
+        const result = await uploadToCloudinary(req.file.path, "hireiq/resumes");
+        fileUrl = result.url;
+        
+        // Clean up temp file
+        fs.unlinkSync(req.file.path);
+        
+        // TODO: Add AI parsing here if needed
+        // For now, we'll just store basic file info
+        parsedData = {
+          filename: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype,
+          uploadedAt: new Date().toISOString(),
+        };
+      } else {
+        // Handle direct URL upload (backwards compatibility)
+        const { fileUrl: bodyFileUrl, parsedData: bodyParsedData } = req.body;
+        if (!bodyFileUrl) {
+          res.status(400).json({ success: false, message: "File is required", data: null });
+          return;
+        }
+        fileUrl = bodyFileUrl;
+        parsedData = bodyParsedData || null;
       }
 
       const existing = await prisma.resume.findUnique({
