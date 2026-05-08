@@ -51,6 +51,10 @@ export const jobController = {
   async getById(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      if (!id) {
+        res.status(400).json({ success: false, message: "Job ID is required", data: null });
+        return;
+      }
       const job = await jobService.getById(id);
 
       res.json({
@@ -124,6 +128,10 @@ export const jobController = {
       }
 
       const { id } = req.params;
+      if (!id) {
+        res.status(400).json({ success: false, message: "Job ID is required", data: null });
+        return;
+      }
       const updated = await jobService.update(id, req.user.userId, req.body);
 
       res.json({
@@ -150,6 +158,10 @@ export const jobController = {
       }
 
       const { id } = req.params;
+      if (!id) {
+        res.status(400).json({ success: false, message: "Job ID is required", data: null });
+        return;
+      }
       await jobService.remove(id, req.user.userId);
 
       res.json({
