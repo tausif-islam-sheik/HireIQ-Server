@@ -6,6 +6,7 @@ import { requireRecruiter, requireRecruiterOrAdmin } from "../middleware/role.mi
 const router = Router();
 
 router.get("/", jobController.list);
+router.get("/my", authenticate, requireRecruiter, jobController.getMyJobs);
 router.get("/categories", jobController.getCategories);
 router.get("/stats", jobController.getStats);
 router.get("/:id", jobController.getById);

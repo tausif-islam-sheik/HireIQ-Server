@@ -286,4 +286,35 @@ export const jobService = {
       })),
     };
   },
+
+  async getMyJobs(recruiterId: string) {
+    const company = await prisma.company.findUnique({
+      where: { recruiterId },
+    });
+
+    if (!company) {
+      return [];
+    }
+
+    const jobs = await prisma.job.findMany({
+      where: { companyId: company.id },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            location: true,
+            industry: true,
+          },
+        },
+        _count: {
+          select: { applications: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return jobs;
+  },
 };

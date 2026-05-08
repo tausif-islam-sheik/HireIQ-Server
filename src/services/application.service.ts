@@ -395,6 +395,7 @@ export const applicationService = {
         myJobs,
         myApplications,
         pendingReviews,
+        shortlistedCount,
         interviewCount,
         applicationsByDateRaw,
         recentApplications,
@@ -405,7 +406,10 @@ export const applicationService = {
           where: { job: { companyId: company.id } },
         }),
         prisma.application.count({
-          where: { job: { companyId: company.id }, status: "PENDING" },
+          where: { job: { companyId: company.id }, status: { in: ["PENDING", "REVIEWING"] } },
+        }),
+        prisma.application.count({
+          where: { job: { companyId: company.id }, status: "SHORTLISTED" },
         }),
         prisma.application.count({
           where: { job: { companyId: company.id }, status: "INTERVIEW" },
@@ -461,6 +465,7 @@ export const applicationService = {
         myJobs,
         myApplications,
         pendingReviews,
+        shortlistedCount,
         interviewCount,
         applicationsByDate,
         recentApplications: formattedRecentApplications,

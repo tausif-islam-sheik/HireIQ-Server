@@ -207,4 +207,29 @@ export const jobController = {
       });
     }
   },
+
+  async getMyJobs(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const jobs = await jobService.getMyJobs(req.user.userId);
+
+      res.json({
+        success: true,
+        message: "Jobs retrieved successfully",
+        data: jobs,
+      });
+    } catch (error) {
+      const err = error as Error & { statusCode?: number };
+      logger.error("Get my jobs error:", err.message);
+      res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Failed to retrieve jobs",
+        data: null,
+      });
+    }
+  },
 };
