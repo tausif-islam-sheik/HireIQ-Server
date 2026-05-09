@@ -1,6 +1,27 @@
 import { Queue, Worker, Job } from "bullmq";
+import nodemailer from "nodemailer";
 import { redis } from "../lib/redis";
 import { logger } from "../lib/logger";
+
+// Create Nodemailer transporter with real SMTP credentials
+const createTransporter = () => {
+  // Check if SMTP credentials are configured
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error(
+      "SMTP credentials not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables."
+    );
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
 
 interface EmailJobData {
   to: string;
@@ -36,10 +57,17 @@ export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> => {
       logger.info(`Sending email to ${to}: ${subject}`);
 
       try {
-        // In production, integrate with a real email service (SendGrid, SES, etc.)
-        // For now, log the email details
-        logger.info(`Email sent successfully to ${to}`);
-        return { success: true, messageId: `msg_${Date.now()}` };
+        const transporter = createTransporter();
+
+        const info = await transporter.sendMail({
+          from: from || process.env.SMTP_FROM || "noreply@hireiq.com",
+          to,
+          subject,
+          html,
+        });
+
+        logger.info(`Email sent successfully to ${to}, messageId: ${info.messageId}`);
+        return { success: true, messageId: info.messageId };
       } catch (error) {
         logger.error(`Email sending failed to ${to}:`, error);
         throw error;

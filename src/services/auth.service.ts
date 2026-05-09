@@ -4,6 +4,7 @@ import prisma from "../lib/prisma";
 import { Role } from "@prisma/client";
 import { JwtPayload } from "../types";
 import { logger } from "../lib/logger";
+import { addEmailJob } from "../queues/emailQueue";
 
 interface RegisterInput {
   name: string;
@@ -80,6 +81,36 @@ export const authService = {
     });
 
     logger.info(`New user registered: ${user.email} (${user.role})`);
+
+    // Send welcome email
+    try {
+      await addEmailJob({
+        to: user.email,
+        subject: "Welcome to HireIQ!",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4f46e5;">Welcome to HireIQ, ${user.name}!</h1>
+            <p>Your account has been created successfully.</p>
+            <p>You can now:</p>
+            <ul>
+              <li>Browse and apply to jobs</li>
+              <li>Upload your resume</li>
+              <li>Get AI-powered job recommendations</li>
+            </ul>
+            <a href="${process.env.CLIENT_URL}/dashboard" 
+               style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+              Go to Dashboard
+            </a>
+            <p style="margin-top: 30px; color: #666; font-size: 12px;">
+              If you didn't create this account, please ignore this email.
+            </p>
+          </div>
+        `,
+      });
+      logger.info(`Welcome email queued for: ${user.email}`);
+    } catch (emailError) {
+      logger.error("Failed to queue welcome email:", emailError);
+    }
 
     return {
       token,

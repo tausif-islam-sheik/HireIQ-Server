@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import { ApplicationStatus, Prisma } from "@prisma/client";
 import { logger } from "../lib/logger";
 import { emitToUser } from "../socket/socket";
+import { addEmailJob } from "../queues/emailQueue";
 
 interface ApplyInput {
   jobId: string;
@@ -72,6 +73,37 @@ export const applicationService = {
       });
     } catch (err) {
       logger.warn("Failed to send notification:", err);
+    }
+
+    // Send confirmation email to candidate
+    try {
+      await addEmailJob({
+        to: application.candidate.email,
+        subject: `Application Received: ${application.job.title}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4f46e5;">Application Submitted!</h1>
+            <p>Hi ${application.candidate.name},</p>
+            <p>Your application for <strong>${application.job.title}</strong> at <strong>${application.job.company.name}</strong> has been received.</p>
+            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>Job:</strong> ${application.job.title}</p>
+              <p style="margin: 8px 0 0 0;"><strong>Company:</strong> ${application.job.company.name}</p>
+              <p style="margin: 8px 0 0 0;"><strong>Status:</strong> Pending Review</p>
+            </div>
+            <p>The recruiter will review your application and contact you soon.</p>
+            <a href="${process.env.CLIENT_URL}/dashboard/my-applications" 
+               style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+              View My Applications
+            </a>
+            <p style="margin-top: 30px; color: #666; font-size: 12px;">
+              Good luck with your application!
+            </p>
+          </div>
+        `,
+      });
+      logger.info(`Application confirmation email sent to: ${application.candidate.email}`);
+    } catch (emailError) {
+      logger.error("Failed to send application confirmation email:", emailError);
     }
 
     logger.info(`Application created: ${application.id}`);
