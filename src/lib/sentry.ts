@@ -1,0 +1,27 @@
+import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
+
+export function initSentry() {
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || "development",
+      release: process.env.RELEASE || "1.0.0",
+      integrations: [
+        nodeProfilingIntegration(),
+      ],
+      tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+      profilesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+      beforeSend(event) {
+        // Don't send sensitive user data
+        if (event.request?.data?.password) {
+          delete event.request.data.password;
+        }
+        return event;
+      },
+    });
+    console.log("✅ Sentry initialized for error tracking");
+  }
+}
+
+export { Sentry };

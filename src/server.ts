@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { initSentry, Sentry } from "./lib/sentry";
+initSentry();
 import express from "express";
 import { createServer } from "http";
 import cors from "cors";
@@ -76,6 +78,11 @@ app.use(notFoundHandler);
 // Global error handler
 app.use(errorHandler);
 
+// Sentry error handler (must be after all other error handlers)
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
+
 // Initialize BullMQ workers
 let resumeWorker: ReturnType<typeof createResumeWorker> | null = null;
 let emailWorker: ReturnType<typeof createEmailWorker> | null = null;
@@ -132,6 +139,9 @@ process.on("unhandledRejection", (reason: unknown) => {
 
 process.on("uncaughtException", (error: Error) => {
   logger.error("Uncaught Exception:", error);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(error);
+  }
   process.exit(1);
 });
 

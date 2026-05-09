@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../lib/logger";
+import { Sentry } from "../lib/sentry";
 
 interface AppError extends Error {
   statusCode?: number;
@@ -19,6 +20,11 @@ export const errorHandler = (
     stack: err.stack,
     isOperational: err.isOperational,
   });
+
+  // Capture error in Sentry (skip operational errors like 400, 404)
+  if (process.env.SENTRY_DSN && (!err.isOperational || statusCode >= 500)) {
+    Sentry.captureException(err);
+  }
 
   res.status(statusCode).json({
     success: false,
