@@ -21,6 +21,7 @@ import companyRoutes from "./routes/company.routes";
 import resumeRoutes from "./routes/resume.routes";
 import aiRoutes from "./routes/ai.routes";
 import savedJobRoutes from "./routes/savedJob.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +72,7 @@ app.use("/api/v1/companies", companyRoutes);
 app.use("/api/v1/resumes", resumeRoutes);
 app.use("/api/v1/saved-jobs", savedJobRoutes);
 app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
