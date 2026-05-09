@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { initSentry, Sentry } from "./lib/sentry";
+import { initSentry, Sentry, sentryErrorHandler } from "./lib/sentry";
 initSentry();
 import express from "express";
 import { createServer } from "http";
@@ -21,6 +21,7 @@ import companyRoutes from "./routes/company.routes";
 import resumeRoutes from "./routes/resume.routes";
 import aiRoutes from "./routes/ai.routes";
 import savedJobRoutes from "./routes/savedJob.routes";
+// @ts-ignore
 import notificationRoutes from "./routes/notification.routes";
 
 const app = express();
@@ -82,7 +83,7 @@ app.use(errorHandler);
 
 // Sentry error handler (must be after all other error handlers)
 if (process.env.SENTRY_DSN) {
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(sentryErrorHandler());
 }
 
 // Initialize BullMQ workers

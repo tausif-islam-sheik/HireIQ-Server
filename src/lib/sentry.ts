@@ -24,4 +24,14 @@ export function initSentry() {
   }
 }
 
+// Export Handlers separately for Express middleware
 export { Sentry };
+export const sentryErrorHandler = () => {
+  // Sentry v10+ uses different API - wrap in try-catch
+  try {
+    // @ts-ignore - Handlers may not exist in all versions
+    return Sentry.Handlers?.errorHandler?.() || ((err: unknown, req: unknown, res: unknown, next: unknown) => next && (next as Function)());
+  } catch {
+    return (err: unknown, req: unknown, res: unknown, next: unknown) => next && (next as Function)();
+  }
+};
