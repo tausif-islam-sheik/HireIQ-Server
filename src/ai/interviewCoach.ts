@@ -1,8 +1,4 @@
-import { logger } from "../lib/logger";
-
-interface ClaudeResponse {
-  content: Array<{ type: string; text: string }>;
-}
+import { callAI, parseJsonResponse } from "./aiClient";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -20,11 +16,6 @@ export const interviewChat = async (
   jobTitle: string,
   messages: ChatMessage[]
 ): Promise<InterviewResult> => {
-  const apiKey = process.env.CLAUDE_API_KEY;
-  if (!apiKey) {
-    throw Object.assign(new Error("Claude API key is not configured"), { statusCode: 500 });
-  }
-
   const conversationHistory = messages
     .map((m) => `${m.role === "user" ? "Candidate" : "Interviewer"}: ${m.content}`)
     .join("\n");
@@ -43,28 +34,6 @@ Return ONLY a JSON object (no other text):
   "nextQuestion": "The next interview question"
 }`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    logger.error(`Claude API error: ${response.status}`);
-    throw Object.assign(new Error("AI service temporarily unavailable"), { statusCode: 502 });
-  }
-
-  const data = (await response.json()) as ClaudeResponse;
-  const text = data.content[0].text;
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Failed to parse AI response");
-  return JSON.parse(jsonMatch[0]) as InterviewResult;
+  const text = await callAI(prompt, "meta-llama/llama-3.1-8b-instruct");
+  return parseJsonResponse<InterviewResult>(text);
 };

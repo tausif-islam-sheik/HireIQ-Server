@@ -1,8 +1,4 @@
-import { logger } from "../lib/logger";
-
-interface ClaudeResponse {
-  content: Array<{ type: string; text: string }>;
-}
+import { callAI, parseJsonResponse } from "./aiClient";
 
 export interface JDResult {
   title: string;
@@ -41,28 +37,6 @@ Return ONLY a JSON object with this exact shape (no other text):
   "benefits": ["benefit1", "benefit2", "benefit3", "benefit4"]
 }`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    logger.error(`Claude API error: ${response.status}`);
-    throw Object.assign(new Error("AI service temporarily unavailable"), { statusCode: 502 });
-  }
-
-  const data = (await response.json()) as ClaudeResponse;
-  const text = data.content[0].text;
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Failed to parse AI response");
-  return JSON.parse(jsonMatch[0]) as JDResult;
+  const text = await callAI(prompt, "meta-llama/llama-3.1-8b-instruct");
+  return parseJsonResponse<JDResult>(text);
 };

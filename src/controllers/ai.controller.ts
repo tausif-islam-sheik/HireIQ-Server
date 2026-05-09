@@ -123,6 +123,7 @@ export const aiController = {
     } catch (error) {
       const err = error as Error & { statusCode?: number };
       logger.error("AI interview chat error:", err.message);
+      logger.error("Full error:", err);
       res.status(err.statusCode || 500).json({
         success: false,
         message: err.message || "Failed to generate interview response",

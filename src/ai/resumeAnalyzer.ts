@@ -1,46 +1,4 @@
-import { logger } from "../lib/logger";
-
-interface ClaudeResponse {
-  content: Array<{ type: string; text: string }>;
-}
-
-const callClaude = async (prompt: string, maxTokens: number = 1024): Promise<string> => {
-  const apiKey = process.env.CLAUDE_API_KEY;
-  if (!apiKey) {
-    throw Object.assign(new Error("Claude API key is not configured"), { statusCode: 500 });
-  }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    logger.error(`Claude API error: ${response.status} - ${errorText}`);
-    throw Object.assign(new Error("AI service temporarily unavailable"), { statusCode: 502 });
-  }
-
-  const data = (await response.json()) as ClaudeResponse;
-  return data.content[0].text;
-};
-
-const parseJsonResponse = <T>(text: string): T => {
-  const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error("Failed to parse AI response");
-  }
-  return JSON.parse(jsonMatch[0]) as T;
-};
+import { callAI, parseJsonResponse } from "./aiClient";
 
 export interface ResumeAnalysis {
   overallScore: number;
@@ -70,6 +28,6 @@ Return ONLY a JSON object with this exact shape (no other text):
   "verdict": "<Strong Match | Moderate Match | Weak Match>"
 }`;
 
-  const text = await callClaude(prompt);
+  const text = await callAI(prompt, "meta-llama/llama-3.1-8b-instruct");
   return parseJsonResponse<ResumeAnalysis>(text);
 };
