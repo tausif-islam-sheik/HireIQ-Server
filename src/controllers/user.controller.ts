@@ -218,7 +218,8 @@ export const userController = {
     } catch (error) {
       const err = error as Error;
       logger.error("Update profile error:", err.message);
-      res.status(500).json({ success: false, message: "Failed to update profile", data: null });
+      logger.error("Full error:", error);
+      res.status(500).json({ success: false, message: `Failed to update profile: ${err.message}`, data: null });
     }
   },
 
@@ -362,6 +363,36 @@ export const userController = {
       const err = error as Error;
       logger.error("Dashboard stats error:", err.message);
       res.status(500).json({ success: false, message: "Failed to get stats", data: null });
+    }
+  },
+
+  async toggleStatus(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const { id } = req.params;
+      const { isActive } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        res.status(404).json({ success: false, message: "User not found", data: null });
+        return;
+      }
+
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { isActive: isActive ?? !user.isActive },
+        select: { id: true, name: true, email: true, isActive: true },
+      });
+
+      res.json({ success: true, message: "User status updated", data: updated });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Toggle user status error:", err.message);
+      res.status(500).json({ success: false, message: "Failed to update status", data: null });
     }
   },
 };

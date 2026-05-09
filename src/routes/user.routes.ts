@@ -13,5 +13,6 @@ router.get("/dashboard-stats", authenticate, userController.getDashboardStats);
 router.get("/:id", authenticate, userController.getById);
 router.put("/profile", authenticate, userController.updateProfile);
 router.put("/change-password", authenticate, userController.changePassword);
+router.put("/:id/status", authenticate, requireAdmin, userController.toggleStatus);
 
 export default router;

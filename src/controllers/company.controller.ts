@@ -198,4 +198,34 @@ export const companyController = {
       res.status(500).json({ success: false, message: "Failed to retrieve company", data: null });
     }
   },
+
+  async verify(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const { id } = req.params;
+      const { isVerified } = req.body;
+
+      const company = await prisma.company.findUnique({ where: { id } });
+      if (!company) {
+        res.status(404).json({ success: false, message: "Company not found", data: null });
+        return;
+      }
+
+      const updated = await prisma.company.update({
+        where: { id },
+        data: { isVerified: isVerified ?? !company.isVerified },
+        select: { id: true, name: true, isVerified: true },
+      });
+
+      res.json({ success: true, message: "Company verification updated", data: updated });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Verify company error:", err.message);
+      res.status(500).json({ success: false, message: "Failed to update verification", data: null });
+    }
+  },
 };
