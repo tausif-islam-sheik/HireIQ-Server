@@ -57,21 +57,29 @@ export const callAI = async (
 };
 
 export const parseJsonResponse = <T>(text: string): T => {
+  // First, try to extract JSON from markdown code blocks
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    text = codeBlockMatch[1];
+  }
+  
   // Clean control characters that break JSON parsing
   const cleaned = text
     .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
     .replace(/\n|\r/g, ' ')              // Replace newlines with spaces
     .trim();
   
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+  // Try to find JSON object or array
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/) || cleaned.match(/\[[\s\S]*\]/);
   if (!jsonMatch) {
+    logger.error("No JSON found in response:", text.substring(0, 200));
     throw new Error("Failed to parse AI response: No JSON found");
   }
   
   try {
     return JSON.parse(jsonMatch[0]) as T;
   } catch (parseError) {
-    logger.error("JSON parse failed for:", jsonMatch[0].substring(0, 100));
+    logger.error("JSON parse failed for:", jsonMatch[0].substring(0, 200));
     throw new Error(`Failed to parse AI response: ${parseError}`);
   }
 };

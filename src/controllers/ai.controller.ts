@@ -5,22 +5,37 @@ import { generateJobDescription } from "../ai/jdGenerator";
 import { rankCandidates } from "../ai/candidateRanker";
 import { interviewChat } from "../ai/interviewCoach";
 import { logger } from "../lib/logger";
+import { prisma } from "../lib/prisma";
 
 export const aiController = {
   async analyzeResume(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { resumeText, jobDescription } = req.body;
 
-      if (!resumeText || !jobDescription) {
+      if (!resumeText) {
         res.status(400).json({
           success: false,
-          message: "Resume text and job description are required",
+          message: "Resume text is required",
           data: null,
         });
         return;
       }
 
-      const analysis = await analyzeResume(resumeText, jobDescription);
+      const defaultJobDescription = jobDescription || "General professional position requiring relevant skills and experience.";
+      const analysis = await analyzeResume(resumeText, defaultJobDescription);
+
+      // Save analysis to user's resume
+      const resume = await prisma.resume.findUnique({
+        where: { userId: req.user?.userId },
+      });
+      
+      if (resume) {
+        await prisma.resume.update({
+          where: { id: resume.id },
+          data: { aiAnalysis: analysis },
+        });
+        logger.info(`AI analysis saved for resume: ${resume.id}`);
+      }
 
       res.json({
         success: true,

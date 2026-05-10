@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { AuthRequest } from "../types";
 import { logger } from "../lib/logger";
 import { uploadToCloudinary } from "../lib/cloudinary";
+import { extractResumeText } from "../lib/resumeParser";
 import fs from "fs";
 
 export const resumeController = {
@@ -22,17 +23,30 @@ export const resumeController = {
         const result = await uploadToCloudinary(req.file.path, "hireiq/resumes");
         fileUrl = result.url;
         
+        // Extract text from resume for AI analysis
+        try {
+          const extractedText = await extractResumeText(req.file.path, req.file.mimetype);
+          parsedData = {
+            filename: req.file.originalname,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+            uploadedAt: new Date().toISOString(),
+            text: extractedText,
+          };
+          logger.info(`Resume text extracted successfully for user: ${req.user.userId}`);
+        } catch (parseError) {
+          logger.warn(`Failed to extract resume text: ${parseError}`);
+          parsedData = {
+            filename: req.file.originalname,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+            uploadedAt: new Date().toISOString(),
+            text: null,
+          };
+        }
+        
         // Clean up temp file
         fs.unlinkSync(req.file.path);
-        
-        // TODO: Add AI parsing here if needed
-        // For now, we'll just store basic file info
-        parsedData = {
-          filename: req.file.originalname,
-          size: req.file.size,
-          mimetype: req.file.mimetype,
-          uploadedAt: new Date().toISOString(),
-        };
       } else {
         // Handle direct URL upload (backwards compatibility)
         const { fileUrl: bodyFileUrl, parsedData: bodyParsedData } = req.body;
