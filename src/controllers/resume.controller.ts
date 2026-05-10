@@ -138,4 +138,34 @@ export const resumeController = {
       res.status(500).json({ success: false, message: "Failed to delete resume", data: null });
     }
   },
+
+  async update(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Not authenticated", data: null });
+        return;
+      }
+
+      const { aiAnalysis } = req.body;
+      const existing = await prisma.resume.findUnique({
+        where: { userId: req.user.userId },
+      });
+
+      if (!existing) {
+        res.status(404).json({ success: false, message: "No resume found", data: null });
+        return;
+      }
+
+      const resume = await prisma.resume.update({
+        where: { userId: req.user.userId },
+        data: { aiAnalysis: aiAnalysis !== undefined ? aiAnalysis : existing.aiAnalysis },
+      });
+
+      res.json({ success: true, message: "Resume updated", data: resume });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Update resume error:", err.message);
+      res.status(500).json({ success: false, message: "Failed to update resume", data: null });
+    }
+  },
 };

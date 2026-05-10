@@ -12,6 +12,7 @@ router.post("/upload", authenticate, requireCandidate, upload.single("file"), re
 // Keep existing endpoint for backwards compatibility
 router.post("/", authenticate, requireCandidate, resumeController.upload);
 router.get("/my", authenticate, requireCandidate, resumeController.getMyResume);
+router.patch("/my", authenticate, requireCandidate, resumeController.update);
 router.delete("/", authenticate, requireCandidate, resumeController.delete);
 
 export default router;
