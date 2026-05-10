@@ -19,11 +19,7 @@ export const resumeController = {
 
       // Handle file upload (from multer)
       if (req.file) {
-        // Upload to Cloudinary
-        const result = await uploadToCloudinary(req.file.path, "hireiq/resumes");
-        fileUrl = result.url;
-        
-        // Extract text from resume for AI analysis
+        // Extract text from resume for AI analysis FIRST (before Cloudinary upload deletes/moves it)
         try {
           const extractedText = await extractResumeText(req.file.path, req.file.mimetype);
           parsedData = {
@@ -45,8 +41,16 @@ export const resumeController = {
           };
         }
         
+        // Upload to Cloudinary
+        const result = await uploadToCloudinary(req.file.path, "hireiq/resumes");
+        fileUrl = result.url;
+        
         // Clean up temp file
-        fs.unlinkSync(req.file.path);
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupError) {
+          logger.warn(`Failed to cleanup temp file: ${cleanupError}`);
+        }
       } else {
         // Handle direct URL upload (backwards compatibility)
         const { fileUrl: bodyFileUrl, parsedData: bodyParsedData } = req.body;
