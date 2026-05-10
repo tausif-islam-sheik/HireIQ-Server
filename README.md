@@ -11,7 +11,7 @@ REST API server powering the HireIQ AI-driven recruitment platform
 [![Prisma](https://img.shields.io/badge/PRISMA-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma.io)
 [![OpenAI](https://img.shields.io/badge/OPENAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
 
-[Frontend Repository](https://github.com/tausif-islam-sheik/HireIQ) | [Frontend Live URL](https://hireiq.vercel.app) — Next.js Web Application
+[Frontend Repository](https://github.com/tausif-islam-sheik/HireIQ) | [Frontend Live URL](https://hireiq-bay.vercel.app) — Next.js Web Application
 
 </div>
 
