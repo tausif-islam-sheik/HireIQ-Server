@@ -21,7 +21,7 @@ services:
         value: 7d
       - key: CLIENT_URL
         value: https://hireiq.vercel.app
-      - key: OPENAI_API_KEY
+      - key: CLAUDE_API_KEY
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
