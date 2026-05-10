@@ -35,20 +35,23 @@ interface EmailJobResult {
   messageId?: string;
 }
 
-export const emailQueue = new Queue<EmailJobData>("email-sending", {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 200,
-    removeOnFail: 100,
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 3000,
-    },
-  },
-});
+export const emailQueue = redis
+  ? new Queue<EmailJobData>("email-sending", {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 200,
+        removeOnFail: 100,
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 3000,
+        },
+      },
+    })
+  : null;
 
-export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> => {
+export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> | null => {
+  if (!redis) return null;
   const worker = new Worker<EmailJobData, EmailJobResult>(
     "email-sending",
     async (job: Job<EmailJobData>) => {
@@ -74,7 +77,7 @@ export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> => {
       }
     },
     {
-      connection: redis,
+      connection: redis!,
       concurrency: 10,
       limiter: {
         max: 50,
@@ -94,7 +97,11 @@ export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> => {
   return worker;
 };
 
-export const addEmailJob = async (data: EmailJobData): Promise<Job<EmailJobData>> => {
+export const addEmailJob = async (data: EmailJobData): Promise<Job<EmailJobData> | null> => {
+  if (!emailQueue) {
+    logger.warn("Email queue not available - Redis not configured");
+    return null;
+  }
   const job = await emailQueue.add("send-email", data, {
     priority: 2,
   });

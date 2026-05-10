@@ -1,26 +1,32 @@
 import Redis from "ioredis";
 import { logger } from "./logger";
 
-const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = process.env.REDIS_URL;
 
-export const redis = new Redis(redisUrl, {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-  retryStrategy(times: number) {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-});
+// Only create Redis client if REDIS_URL is set
+export const redis = redisUrl
+  ? new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      retryStrategy(times: number) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    })
+  : null;
 
-redis.on("connect", () => {
-  logger.info("Redis connected successfully");
-});
+if (redis) {
+  redis.on("connect", () => {
+    logger.info("Redis connected successfully");
+  });
 
-redis.on("error", (err: Error) => {
-  logger.error("Redis connection error:", err.message);
-});
+  redis.on("error", (err: Error) => {
+    logger.error("Redis connection error:", err.message);
+  });
+}
 
 export const cacheGet = async (key: string): Promise<string | null> => {
+  if (!redis) return null;
   try {
     return await redis.get(key);
   } catch (error) {
@@ -34,6 +40,7 @@ export const cacheSet = async (
   value: string,
   ttlSeconds: number = 300
 ): Promise<void> => {
+  if (!redis) return;
   try {
     await redis.set(key, value, "EX", ttlSeconds);
   } catch (error) {
@@ -42,6 +49,7 @@ export const cacheSet = async (
 };
 
 export const cacheDel = async (key: string): Promise<void> => {
+  if (!redis) return;
   try {
     await redis.del(key);
   } catch (error) {
@@ -50,6 +58,7 @@ export const cacheDel = async (key: string): Promise<void> => {
 };
 
 export const cacheDelPattern = async (pattern: string): Promise<void> => {
+  if (!redis) return;
   try {
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {

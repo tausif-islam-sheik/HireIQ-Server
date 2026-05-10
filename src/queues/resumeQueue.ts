@@ -14,20 +14,23 @@ interface ResumeJobResult {
   parsedData?: Record<string, unknown>;
 }
 
-export const resumeQueue = new Queue<ResumeJobData>("resume-processing", {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 100,
-    removeOnFail: 50,
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 2000,
-    },
-  },
-});
+export const resumeQueue = redis
+  ? new Queue<ResumeJobData>("resume-processing", {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+      },
+    })
+  : null;
 
-export const createResumeWorker = (): Worker<ResumeJobData, ResumeJobResult> => {
+export const createResumeWorker = (): Worker<ResumeJobData, ResumeJobResult> | null => {
+  if (!redis) return null;
   const worker = new Worker<ResumeJobData, ResumeJobResult>(
     "resume-processing",
     async (job: Job<ResumeJobData>) => {
@@ -55,7 +58,7 @@ export const createResumeWorker = (): Worker<ResumeJobData, ResumeJobResult> => 
       }
     },
     {
-      connection: redis,
+      connection: redis!,
       concurrency: 5,
       limiter: {
         max: 10,
@@ -75,7 +78,11 @@ export const createResumeWorker = (): Worker<ResumeJobData, ResumeJobResult> => 
   return worker;
 };
 
-export const addResumeJob = async (data: ResumeJobData): Promise<Job<ResumeJobData>> => {
+export const addResumeJob = async (data: ResumeJobData): Promise<Job<ResumeJobData> | null> => {
+  if (!resumeQueue) {
+    logger.warn("Resume queue not available - Redis not configured");
+    return null;
+  }
   const job = await resumeQueue.add("parse-resume", data, {
     priority: 1,
   });
