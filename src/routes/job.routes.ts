@@ -3,7 +3,7 @@ import { jobController } from "../controllers/job.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { requireRecruiter, requireRecruiterOrAdmin } from "../middleware/role.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/", jobController.list);
 router.get("/my", authenticate, requireRecruiter, jobController.getMyJobs);

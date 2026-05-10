@@ -14,8 +14,9 @@ export function initSentry() {
       profilesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
       beforeSend(event) {
         // Don't send sensitive user data
-        if (event.request?.data?.password) {
-          delete event.request.data.password;
+        const data = event.request?.data as { password?: string } | undefined;
+        if (data?.password) {
+          delete data.password;
         }
         return event;
       },

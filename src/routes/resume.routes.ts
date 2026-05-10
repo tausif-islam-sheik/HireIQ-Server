@@ -4,7 +4,7 @@ import { authenticate } from "../middleware/auth.middleware";
 import { requireCandidate } from "../middleware/role.middleware";
 import { upload } from "../services/upload.service";
 
-const router = Router();
+const router: Router = Router();
 
 // File upload endpoint
 router.post("/upload", authenticate, requireCandidate, upload.single("file"), resumeController.upload);

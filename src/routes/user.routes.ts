@@ -3,7 +3,7 @@ import { userController } from "../controllers/user.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { requireAdmin } from "../middleware/role.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/", authenticate, requireAdmin, userController.list);
 router.get("/profile", authenticate, userController.getProfile);

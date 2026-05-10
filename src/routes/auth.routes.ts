@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import { authController } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { authLimiter } from "../middleware/rateLimit.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 router.post("/register", authLimiter, authController.register);
 router.post("/login", authLimiter, authController.login);

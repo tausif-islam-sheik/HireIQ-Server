@@ -3,7 +3,7 @@ import { applicationController } from "../controllers/application.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { requireCandidate, requireRecruiter } from "../middleware/role.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 router.post("/", authenticate, requireCandidate, applicationController.apply);
 router.get("/my", authenticate, requireCandidate, applicationController.getMyApplications);

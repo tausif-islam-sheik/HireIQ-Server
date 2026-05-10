@@ -3,7 +3,7 @@ import { aiController } from "../controllers/ai.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { aiLimiter } from "../middleware/rateLimit.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 router.use(authenticate);
 router.use(aiLimiter);

@@ -65,7 +65,7 @@ export const userController = {
 
   async getById(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const user = await prisma.user.findUnique({
         where: { id },
@@ -373,7 +373,7 @@ export const userController = {
         return;
       }
 
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { isActive } = req.body;
 
       const user = await prisma.user.findUnique({ where: { id } });
@@ -384,7 +384,7 @@ export const userController = {
 
       const updated = await prisma.user.update({
         where: { id },
-        data: { isActive: isActive ?? !user.isActive },
+        data: { isActive: isActive ?? !(user as { isActive?: boolean }).isActive },
         select: { id: true, name: true, email: true, isActive: true },
       });
 

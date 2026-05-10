@@ -59,7 +59,7 @@ export const companyController = {
 
   async getById(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const company = await prisma.company.findUnique({
         where: { id },
@@ -137,7 +137,7 @@ export const companyController = {
         return;
       }
 
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const company = await prisma.company.findUnique({ where: { id } });
       if (!company) {
@@ -206,7 +206,7 @@ export const companyController = {
         return;
       }
 
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { isVerified } = req.body;
 
       const company = await prisma.company.findUnique({ where: { id } });
@@ -217,7 +217,7 @@ export const companyController = {
 
       const updated = await prisma.company.update({
         where: { id },
-        data: { isVerified: isVerified ?? !company.isVerified },
+        data: { isVerified: isVerified ?? (company as { isVerified?: boolean }).isVerified },
         select: { id: true, name: true, isVerified: true },
       });
 

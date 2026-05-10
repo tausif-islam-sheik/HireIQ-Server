@@ -8,7 +8,7 @@ import {
   deleteNotification,
 } from "../controllers/notification.controller";
 
-const router = Router();
+const router: Router = Router();
 
 // All notification routes require authentication
 router.use(authenticate);

@@ -21,10 +21,9 @@ import companyRoutes from "./routes/company.routes";
 import resumeRoutes from "./routes/resume.routes";
 import aiRoutes from "./routes/ai.routes";
 import savedJobRoutes from "./routes/savedJob.routes";
-// @ts-ignore
 import notificationRoutes from "./routes/notification.routes";
 
-const app = express();
+const app: express.Application = express();
 const httpServer = createServer(app);
 
 // Initialize Socket.io

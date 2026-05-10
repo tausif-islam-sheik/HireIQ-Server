@@ -50,7 +50,7 @@ export const jobController = {
 
   async getById(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) {
         res.status(400).json({ success: false, message: "Job ID is required", data: null });
         return;
@@ -127,7 +127,7 @@ export const jobController = {
         return;
       }
 
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) {
         res.status(400).json({ success: false, message: "Job ID is required", data: null });
         return;
@@ -157,7 +157,7 @@ export const jobController = {
         return;
       }
 
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) {
         res.status(400).json({ success: false, message: "Job ID is required", data: null });
         return;

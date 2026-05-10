@@ -52,7 +52,7 @@ export const createEmailWorker = (): Worker<EmailJobData, EmailJobResult> => {
   const worker = new Worker<EmailJobData, EmailJobResult>(
     "email-sending",
     async (job: Job<EmailJobData>) => {
-      const { to, subject } = job.data;
+      const { to, subject, html, from } = job.data;
 
       logger.info(`Sending email to ${to}: ${subject}`);
 
