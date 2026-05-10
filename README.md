@@ -50,7 +50,9 @@ HireIQ Backend provides secure APIs for job posting, AI-powered candidate evalua
 | PostgreSQL | 15.x | Primary database |
 | JWT | 9.x | Authentication tokens |
 | bcryptjs | 2.x | Password hashing |
-| OpenAI API | v1 | AI resume screening, coaching |
+| OpenRouter API | v1 | AI resume analysis (Meta Llama 3.1) |
+| pdf-parse | 1.x | PDF text extraction |
+| mammoth | 1.x | Word document parsing |
 | Multer | 1.x | File upload handling |
 | Zod | 3.x | Request validation |
 | CORS | 2.x | Cross-origin handling |
@@ -60,8 +62,12 @@ HireIQ Backend provides secure APIs for job posting, AI-powered candidate evalua
 ### Prisma ORM with PostgreSQL
 **Why chosen**: Type-safe database queries, automatic migration generation, and excellent developer experience. The schema-first approach ensures type safety across backend and frontend.
 
-### OpenAI GPT-4 API
-**Why chosen**: State-of-the-art natural language processing for resume parsing, interview question generation, and answer evaluation. Provides human-like coaching feedback.
+### OpenRouter API with Meta Llama 3.1
+**Why chosen**: Cost-effective access to powerful open-source LLMs. Meta Llama 3.1 provides excellent resume analysis, scoring, and feedback generation at lower cost than proprietary models.
+
+### PDF & Word Text Extraction
+**Libraries**: pdf-parse (PDF), mammoth (Word)
+**Why chosen**: Essential for extracting resume text before AI analysis. Enables processing of both PDF and Word document formats with high accuracy.
 
 ### Zod Schema Validation
 **Why chosen**: TypeScript-first validation with excellent error messages. Combines runtime validation with static type inference, reducing bugs at API boundaries.
@@ -95,7 +101,40 @@ Output: {
 
 **API Endpoint**: `POST /api/v1/ai/screen-resume`
 
-### 2. Candidate Ranking & Matching 🏆
+### 2. AI Resume Analysis 📄
+**How it works**:
+```
+Input:  Resume text extracted from PDF/Word
+↓
+Processing:
+  1. Extract text using pdf-parse (PDF) or mammoth (Word)
+  2. Send to OpenRouter API with Meta Llama 3.1 model
+  3. Parse JSON response with scores and feedback
+  4. Save analysis to resume.aiAnalysis field
+↓
+Output: {
+  overallScore: 60,
+  matchPercentage: 50,
+  strengths: ["Relevant work experience", "Transferable skills"],
+  gaps: ["Lack of industry-specific experience"],
+  suggestions: ["Consider highlighting specific achievements"],
+  verdict: "Moderate Match"
+}
+```
+
+**Text Extraction Pipeline**:
+1. Upload file → Multer saves to disk
+2. Extract text BEFORE Cloudinary upload (prevents file deletion)
+3. Upload to Cloudinary for storage
+4. Store extracted text in parsedData.text
+5. Return file URL + parsed data to frontend
+
+**API Endpoints**:
+- `POST /api/v1/resumes/upload` - Upload with text extraction
+- `POST /api/v1/ai/analyze-resume` - Analyze resume text
+- `PATCH /api/v1/resumes/my` - Update/reset AI analysis
+
+### 3. Candidate Ranking & Matching 🏆
 **How it works**:
 ```
 Input:  Job ID + All Applications
@@ -118,7 +157,7 @@ Output: [
 
 **API Endpoint**: `GET /api/v1/jobs/:id/ranked-candidates`
 
-### 3. AI Interview Coaching 🎤
+### 4. AI Interview Coaching 🎤
 **How it works**:
 ```
 Input:  Job Role + Previous Q&A History
@@ -147,7 +186,7 @@ Output: {
 - `POST /api/v1/ai/interview/question` - Generate question
 - `POST /api/v1/ai/interview/evaluate` - Evaluate answer
 
-### 4. Personalized Job Recommendations 🎯
+### 5. Personalized Job Recommendations 🎯
 **How it works**:
 ```
 Input:  Candidate Profile + All Active Jobs
@@ -440,11 +479,35 @@ npm start
 ### AI Features
 | Method | Endpoint | Description | Auth Required | Role |
 |--------|----------|-------------|:-------------:|:----:|
+| POST | `/api/v1/ai/analyze-resume` | AI analyzes resume for candidates | ✅ | Candidate |
 | POST | `/api/v1/ai/screen-resume` | AI analyzes resume against job | ✅ | System |
 | POST | `/api/v1/ai/interview/question` | Generate AI interview question | ✅ | Candidate |
 | POST | `/api/v1/ai/interview/evaluate` | Evaluate candidate's answer | ✅ | Candidate |
 | GET | `/api/v1/ai/recommendations` | Get AI job recommendations | ✅ | Candidate |
 | GET | `/api/v1/ai/match-score` | Get match score for job | ✅ | Candidate |
+
+**Request Body for `POST /ai/analyze-resume`:**
+```json
+{
+  "resumeText": "Extracted resume text content...",
+  "jobDescription": "Optional job description"
+}
+```
+
+**Response for `POST /ai/analyze-resume`:**
+```json
+{
+  "success": true,
+  "data": {
+    "overallScore": 60,
+    "matchPercentage": 50,
+    "strengths": ["Relevant work experience", "Transferable skills"],
+    "gaps": ["Lack of industry-specific experience"],
+    "suggestions": ["Consider highlighting specific achievements"],
+    "verdict": "Moderate Match"
+  }
+}
+```
 
 **Request Body for `POST /ai/screen-resume`:**
 ```json
@@ -468,7 +531,10 @@ npm start
 ### Upload
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|:-------------:|
-| POST | `/api/v1/upload/resume` | Upload resume PDF | ✅ |
+| POST | `/api/v1/resumes/upload` | Upload resume PDF/Word with text extraction | ✅ | Candidate |
+| GET | `/api/v1/resumes/my` | Get candidate's resume | ✅ | Candidate |
+| PATCH | `/api/v1/resumes/my` | Update resume (reset AI analysis) | ✅ | Candidate |
+| DELETE | `/api/v1/resumes` | Delete resume | ✅ | Candidate |
 | POST | `/api/v1/upload/avatar` | Upload profile picture | ✅ |
 | DELETE | `/api/v1/upload/:filename` | Delete uploaded file | ✅ |
 
