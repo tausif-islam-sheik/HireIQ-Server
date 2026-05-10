@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: hireiq-server
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && pnpm run build && pnpm run migrate
+    startCommand: pnpm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hireiq-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        value: https://hireiq.vercel.app
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: hireiq-redis
+          property: connectionString
+      - key: SENTRY_DSN
+        sync: false
+        required: false
+
+databases:
+  - name: hireiq-db
+    plan: free
+    databaseName: hireiq
+    user: hireiq
+
+# Optional: Redis for BullMQ queues (commented out for free tier)
+# redis:
+#   - name: hireiq-redis
+#     plan: free
+#     maxmemoryPolicy: noeviction

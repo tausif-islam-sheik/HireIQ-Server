@@ -8,9 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
     "studio": "prisma studio",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",
