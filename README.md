@@ -1,8 +1,19 @@
-# HireIQ - AI-Powered Recruitment Platform (Backend)
+# ⚙️ HireIQ Server
+
+REST API server powering the HireIQ AI-driven recruitment platform
+
+[![Node.js](https://img.shields.io/badge/NODE.JS@20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TYPESCRIPT@5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Express](https://img.shields.io/badge/EXPRESS.JS-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
+[![PostgreSQL](https://img.shields.io/badge/POSTGRESQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Prisma](https://img.shields.io/badge/PRISMA-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma.io)
+[![OpenAI](https://img.shields.io/badge/OPENAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
+
+[Frontend Repository](https://github.com/tausif-islam-sheik/HireIQ) | [Frontend Live URL](https://hireiq.vercel.app) — Next.js Web Application
 
 ## Project Overview
 
-HireIQ Backend powers an AI-driven recruitment platform that automates the hiring process from resume screening to candidate ranking. Built with Express.js, TypeScript, and Prisma ORM, it provides secure APIs for job posting, AI-powered candidate evaluation, interview coaching, and personalized recommendations.
+HireIQ Backend provides secure APIs for job posting, AI-powered candidate evaluation, resume screening, interview coaching, and personalized job recommendations.
 
 ### Who It's For
 
@@ -336,49 +347,165 @@ npm start
 ## API Overview
 
 ### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | Login, returns JWT |
-| GET | `/api/v1/auth/me` | Get current user |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|:-------------:|
+| POST | `/api/v1/auth/register` | Register new user (Candidate/Recruiter) | ❌ |
+| POST | `/api/v1/auth/login` | Login and receive JWT tokens | ❌ |
+| GET | `/api/v1/auth/me` | Get current authenticated user | ✅ |
 
-### AI Features
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/ai/screen-resume` | AI resume screening |
-| GET | `/api/v1/jobs/:id/ranked-candidates` | Get AI-ranked applicants |
-| POST | `/api/v1/ai/interview/question` | Generate interview question |
-| POST | `/api/v1/ai/interview/evaluate` | Evaluate candidate answer |
-| GET | `/api/v1/ai/recommendations` | Get job recommendations |
+### Users
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|:-------------:|:----:|
+| GET | `/api/v1/users` | List all users with pagination & filters | ✅ | Admin |
+| GET | `/api/v1/users/profile` | Get current user profile | ✅ | Any |
+| PUT | `/api/v1/users/profile` | Update user profile (name, email, etc.) | ✅ | Any |
+| PUT | `/api/v1/users/password` | Change password | ✅ | Any |
+| PUT | `/api/v1/users/:id/status` | Activate/Deactivate user account | ✅ | Admin |
+| GET | `/api/v1/users/dashboard-stats` | Get platform analytics & statistics | ✅ | Admin |
+
+**Query Parameters for `GET /users`:**
+- `search` - Search by name or email
+- `role` - Filter by role (CANDIDATE, RECRUITER, ADMIN)
+- `isActive` - Filter by active status
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 10)
+
+### Companies
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|:-------------:|:----:|
+| GET | `/api/v1/companies` | List all companies with filters | ✅ | Admin |
+| GET | `/api/v1/companies/:id` | Get company details | ✅ | Any |
+| POST | `/api/v1/companies` | Create new company | ✅ | Admin |
+| PUT | `/api/v1/companies/:id` | Update company details | ✅ | Admin/Owner |
+| PUT | `/api/v1/companies/:id/verify` | Verify/Unverify company | ✅ | Admin |
+| DELETE | `/api/v1/companies/:id` | Delete company | ✅ | Admin |
+
+**Query Parameters for `GET /companies`:**
+- `search` - Search by name
+- `isVerified` - Filter by verification status
+- `page` - Page number
+- `limit` - Items per page
 
 ### Jobs
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/jobs` | List all jobs (with filters) |
-| POST | `/api/v1/jobs` | Create job (recruiter) |
-| GET | `/api/v1/jobs/:id` | Get job details |
-| PUT | `/api/v1/jobs/:id` | Update job |
-| DELETE | `/api/v1/jobs/:id` | Delete job |
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|:-------------:|:----:|
+| GET | `/api/v1/jobs` | List all active jobs with filters | ❌ | Any |
+| GET | `/api/v1/jobs/my-jobs` | List jobs posted by current recruiter | ✅ | Recruiter |
+| GET | `/api/v1/jobs/:id` | Get job details | ✅ | Any |
+| POST | `/api/v1/jobs` | Create new job posting | ✅ | Recruiter |
+| PUT | `/api/v1/jobs/:id` | Update job posting | ✅ | Recruiter/Admin |
+| DELETE | `/api/v1/jobs/:id` | Delete job posting | ✅ | Recruiter/Admin |
+| GET | `/api/v1/jobs/:id/applications` | Get applications for a job | ✅ | Recruiter/Admin |
+| GET | `/api/v1/jobs/:id/ranked-candidates` | Get AI-ranked candidates | ✅ | Recruiter/Admin |
+
+**Query Parameters for `GET /jobs`:**
+- `search` - Search by title or description
+- `type` - Filter by job type (FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP)
+- `location` - Filter by location
+- `isActive` - Filter by active status
+- `minSalary` / `maxSalary` - Salary range filter
+- `page` - Page number
+- `limit` - Items per page
 
 ### Applications
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/applications` | List applications |
-| POST | `/api/v1/applications` | Apply for job |
-| PUT | `/api/v1/applications/:id/status` | Update status |
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|:-------------:|:----:|
+| GET | `/api/v1/applications` | List user's applications | ✅ | Any |
+| GET | `/api/v1/applications/my-applicants` | List applications to recruiter's jobs | ✅ | Recruiter |
+| POST | `/api/v1/applications` | Apply for a job | ✅ | Candidate |
+| GET | `/api/v1/applications/:id` | Get application details | ✅ | Any |
+| PUT | `/api/v1/applications/:id/status` | Update application status | ✅ | Recruiter/Admin |
+| DELETE | `/api/v1/applications/:id` | Withdraw application | ✅ | Candidate |
 
-### Users (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/users` | List all users |
-| PUT | `/api/v1/users/:id/status` | Toggle active status |
-| GET | `/api/v1/users/dashboard-stats` | Get analytics |
+**Application Status Values:**
+- `PENDING` - Application received
+- `REVIEWING` - Under review
+- `SHORTLISTED` - Shortlisted for interview
+- `INTERVIEW` - Interview scheduled
+- `ACCEPTED` - Job offer accepted
+- `REJECTED` - Application rejected
 
-### Companies (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/companies` | List companies |
-| PUT | `/api/v1/companies/:id/verify` | Verify company |
+### Notifications
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|:-------------:|
+| GET | `/api/v1/notifications` | List user notifications | ✅ |
+| PUT | `/api/v1/notifications/:id/read` | Mark notification as read | ✅ |
+| PUT | `/api/v1/notifications/read-all` | Mark all notifications as read | ✅ |
+| DELETE | `/api/v1/notifications/:id` | Delete notification | ✅ |
+
+### AI Features
+| Method | Endpoint | Description | Auth Required | Role |
+|--------|----------|-------------|:-------------:|:----:|
+| POST | `/api/v1/ai/screen-resume` | AI analyzes resume against job | ✅ | System |
+| POST | `/api/v1/ai/interview/question` | Generate AI interview question | ✅ | Candidate |
+| POST | `/api/v1/ai/interview/evaluate` | Evaluate candidate's answer | ✅ | Candidate |
+| GET | `/api/v1/ai/recommendations` | Get AI job recommendations | ✅ | Candidate |
+| GET | `/api/v1/ai/match-score` | Get match score for job | ✅ | Candidate |
+
+**Request Body for `POST /ai/screen-resume`:**
+```json
+{
+  "resumeText": "Full resume text content...",
+  "jobId": "job-uuid-here"
+}
+```
+
+**Response for `POST /ai/screen-resume`:**
+```json
+{
+  "overallScore": 87,
+  "skillMatches": ["React", "Node.js", "PostgreSQL"],
+  "skillGaps": ["Docker", "Kubernetes"],
+  "experienceMatch": "5 years meets requirement",
+  "recommendation": "STRONG_MATCH"
+}
+```
+
+### Upload
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|:-------------:|
+| POST | `/api/v1/upload/resume` | Upload resume PDF | ✅ |
+| POST | `/api/v1/upload/avatar` | Upload profile picture | ✅ |
+| DELETE | `/api/v1/upload/:filename` | Delete uploaded file | ✅ |
+
+### Response Format
+All API responses follow this structure:
+
+**Success Response (200-299):**
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"
+}
+```
+
+**Error Response (400-599):**
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "details": { ... }
+}
+```
+
+### Pagination Format
+List endpoints return paginated results:
+
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "totalPages": 10,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+```
 
 ---
 
