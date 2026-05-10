@@ -1,3 +1,5 @@
+<div align="center">
+
 # ⚙️ HireIQ Server
 
 REST API server powering the HireIQ AI-driven recruitment platform
@@ -10,6 +12,8 @@ REST API server powering the HireIQ AI-driven recruitment platform
 [![OpenAI](https://img.shields.io/badge/OPENAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
 
 [Frontend Repository](https://github.com/tausif-islam-sheik/HireIQ) | [Frontend Live URL](https://hireiq.vercel.app) — Next.js Web Application
+
+</div>
 
 ## Project Overview
 
