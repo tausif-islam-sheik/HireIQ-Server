@@ -32,7 +32,7 @@ export const aiController = {
       if (resume) {
         await prisma.resume.update({
           where: { id: resume.id },
-          data: { aiAnalysis: analysis },
+          data: { aiAnalysis: analysis as any },
         });
         logger.info(`AI analysis saved for resume: ${resume.id}`);
       }
