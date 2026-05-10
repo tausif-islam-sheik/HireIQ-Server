@@ -29,11 +29,11 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: hireiq-redis
-          property: connectionString
+      # - key: REDIS_URL
+      #   fromService:
+      #     type: redis
+      #     name: hireiq-redis
+      #     property: connectionString
       - key: SENTRY_DSN
         sync: false
         required: false
