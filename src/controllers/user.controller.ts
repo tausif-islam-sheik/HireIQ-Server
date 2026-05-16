@@ -331,6 +331,8 @@ export const userController = {
         prisma.company.count(),
       ]);
 
+      const totalHires = await prisma.application.count({ where: { status: "HIRED" } });
+
       const recentApplications = await prisma.application.findMany({
         orderBy: { createdAt: "desc" },
         take: 10,
@@ -340,12 +342,54 @@ export const userController = {
         },
       });
 
-      const applicationsByDate = await prisma.application.groupBy({
-        by: ["createdAt"],
-        _count: { id: true },
-        orderBy: { createdAt: "desc" },
-        take: 30,
+      const applications = await prisma.application.findMany({
+        select: { createdAt: true, status: true },
+        orderBy: { createdAt: "asc" }
       });
+      const jobs = await prisma.job.findMany({
+        select: { createdAt: true },
+        orderBy: { createdAt: "asc" }
+      });
+
+      const appsByDateMap = new Map<string, number>();
+      applications.forEach(app => {
+        const date = app.createdAt.toISOString().split('T')[0];
+        appsByDateMap.set(date, (appsByDateMap.get(date) || 0) + 1);
+      });
+      const applicationsByDate = Array.from(appsByDateMap.entries()).map(([date, count]) => ({ date, count }));
+
+      const statusMap = new Map<string, number>();
+      applications.forEach(app => {
+        statusMap.set(app.status, (statusMap.get(app.status) || 0) + 1);
+      });
+      const statusDistribution = Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthlyStatsMap = new Map<string, { jobs: number, applications: number }>();
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthName = months[d.getMonth()];
+        monthlyStatsMap.set(monthName, { jobs: 0, applications: 0 });
+      }
+
+      jobs.forEach(job => {
+        const monthName = months[job.createdAt.getMonth()];
+        if (monthlyStatsMap.has(monthName)) {
+           monthlyStatsMap.get(monthName)!.jobs++;
+        }
+      });
+      applications.forEach(app => {
+        const monthName = months[app.createdAt.getMonth()];
+        if (monthlyStatsMap.has(monthName)) {
+           monthlyStatsMap.get(monthName)!.applications++;
+        }
+      });
+      const monthlyStats = Array.from(monthlyStatsMap.entries()).map(([month, stats]) => ({
+        month,
+        jobs: stats.jobs,
+        applications: stats.applications
+      }));
 
       res.json({
         success: true,
@@ -355,8 +399,11 @@ export const userController = {
           totalJobs,
           totalApplications,
           totalCompanies,
+          totalHires,
           recentApplications,
           applicationsByDate,
+          statusDistribution,
+          monthlyStats
         },
       });
     } catch (error) {
