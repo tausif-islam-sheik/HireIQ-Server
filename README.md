@@ -23,7 +23,7 @@ The HireIQ server acts as an intelligent orchestrator, transforming raw candidat
 
 ### 1. **Multi-Model AI Integration** 🤖
 
-We leverage an ensemble of state-of-the-art Large Language Models (LLMs) via **Anthropic Claude** and **Meta Llama 3.1** to ensure maximum accuracy in resume parsing and interview coaching.
+We leverage an ensemble of state-of-the-art Large Language Models (LLMs) via the **OpenRouter API** (including Models like Llama 3.1 and GPT-4o) to ensure maximum accuracy in resume parsing and interview coaching.
 
 ### 2. **Resume Screening Engine** 🔍
 
@@ -96,6 +96,46 @@ JWT_SECRET="your-secret"
 CLAUDE_API_KEY="sk-ant-..."
 OPENROUTER_API_KEY="sk-or-..."
 PORT=5000
+```
+
+## 📂 Full Project Structure
+
+```bash
+hireiq-server/
+├── prisma/                 # Database schema and migrations
+│   ├── schema.prisma       # Database model definitions
+│   └── migrations/         # SQL migration history
+├── src/
+│   ├── controllers/        # Request handlers & logic orchestration
+│   │   ├── ai.controller.ts          # AI orchestration (OpenRouter)
+│   │   ├── auth.controller.ts        # Authentication & JWT logic
+│   │   ├── job.controller.ts         # Job posting & management
+│   │   ├── application.controller.ts # Applicant pipeline management
+│   │   └── user.controller.ts        # Profile & user management
+│   ├── routes/             # API route definitions
+│   │   ├── ai.routes.ts              # AI-specific endpoints
+│   │   ├── auth.routes.ts            # Auth & session endpoints
+│   │   └── index.ts                  # Root router & versioning
+│   ├── services/           # External integrations & core business logic
+│   │   ├── ai/
+│   │   │   ├── openrouter.service.ts # OpenRouter API integration
+│   │   │   ├── parser.service.ts     # Resume parsing logic
+│   │   │   └── scorer.service.ts     # AI match scoring algorithm
+│   │   └── prisma.service.ts         # Prisma client singleton
+│   ├── middleware/         # Custom Express middleware
+│   │   ├── auth.middleware.ts        # JWT verification & session recovery
+│   │   ├── role.middleware.ts        # RBAC (Admin/Recruiter/Candidate)
+│   │   └── error.middleware.ts       # Global exception handling
+│   ├── utils/              # Helper functions & shared constants
+│   │   ├── jwt.ts                    # Token generation & signing
+│   │   ├── logger.ts                 # Production logging (Winston/Pino)
+│   │   └── validation.ts             # Zod schema validation helpers
+│   ├── types/              # TypeScript interfaces & Enums
+│   └── server.ts           # Application entry point & Express config
+├── .env                    # Environment variables (Secrets)
+├── .gitignore              # Git exclusion rules
+├── package.json            # Project metadata & scripts
+└── tsconfig.json           # TypeScript configuration
 ```
 
 ---
